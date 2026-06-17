@@ -1,0 +1,281 @@
+// ================================================================
+// HPCL RTI Analytics — Power BI DAX Measures
+// Paste each measure into Power BI via:
+//   Home → New Measure (or Modeling tab → New Measure)
+// Table name assumed: rti_data
+// ================================================================
+
+
+// ──────────────────────────────────────────────
+// SECTION 1 — CORE VOLUME MEASURES
+// ──────────────────────────────────────────────
+
+Total RTIs =
+COUNTROWS(rti_data)
+
+// ─────────────────────────────────────────────
+
+Total Resolved RTIs =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Compliant_Response] <> "Pending"
+)
+
+// ─────────────────────────────────────────────
+
+Total Pending RTIs =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Compliant_Response] = "Pending"
+)
+
+
+// ──────────────────────────────────────────────
+// SECTION 2 — COMPLIANCE MEASURES
+// ──────────────────────────────────────────────
+
+On Time RTIs =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Compliant_Response] = "Yes"
+)
+
+// ─────────────────────────────────────────────
+
+Breached RTIs =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Compliant_Response] = "No"
+)
+
+// ─────────────────────────────────────────────
+
+Compliance Rate % =
+DIVIDE(
+    [On Time RTIs],
+    [Total Resolved RTIs],
+    0
+) * 100
+
+// ─────────────────────────────────────────────
+
+Breach Rate % =
+DIVIDE(
+    [Breached RTIs],
+    [Total Resolved RTIs],
+    0
+) * 100
+
+// ─────────────────────────────────────────────
+
+Compliance Rate Label =
+FORMAT([Compliance Rate %], "0.0") & "%"
+
+
+// ──────────────────────────────────────────────
+// SECTION 3 — RESPONSE TIME MEASURES
+// ──────────────────────────────────────────────
+
+Avg Response Days =
+AVERAGEX(
+    FILTER(rti_data, rti_data[Response_Time_Days] > 0),
+    rti_data[Response_Time_Days]
+)
+
+// ─────────────────────────────────────────────
+
+Avg Breach Days =
+AVERAGEX(
+    FILTER(rti_data, rti_data[Breach_Days] > 0),
+    rti_data[Breach_Days]
+)
+
+// ─────────────────────────────────────────────
+
+Max Response Days =
+MAXX(
+    FILTER(rti_data, rti_data[Response_Time_Days] > 0),
+    rti_data[Response_Time_Days]
+)
+
+
+// ──────────────────────────────────────────────
+// SECTION 4 — APPEAL MEASURES
+// ──────────────────────────────────────────────
+
+Total First Appeals =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[First_Appeal_Filed] = "Yes"
+)
+
+// ─────────────────────────────────────────────
+
+First Appeal Rate % =
+DIVIDE(
+    [Total First Appeals],
+    [Total RTIs],
+    0
+) * 100
+
+// ─────────────────────────────────────────────
+
+Total CIC Escalations =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Second_Appeal_CIC] = "Yes"
+)
+
+// ─────────────────────────────────────────────
+
+CIC Escalation Rate % =
+DIVIDE(
+    [Total CIC Escalations],
+    [Total RTIs],
+    0
+) * 100
+
+// ─────────────────────────────────────────────
+
+Appeals Upheld (First) =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[First_Appeal_Outcome] = "Upheld"
+)
+
+// ─────────────────────────────────────────────
+
+Appeals Partially Upheld (First) =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[First_Appeal_Outcome] = "Partially Upheld"
+)
+
+
+// ──────────────────────────────────────────────
+// SECTION 5 — DISPOSAL MEASURES
+// ──────────────────────────────────────────────
+
+Info Provided RTIs =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Disposal_Type] = "Information Provided"
+)
+
+// ─────────────────────────────────────────────
+
+Rejected RTIs =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Disposal_Type] = "Rejected"
+)
+
+// ─────────────────────────────────────────────
+
+Rejection Rate % =
+DIVIDE(
+    [Rejected RTIs],
+    [Total RTIs],
+    0
+) * 100
+
+// ─────────────────────────────────────────────
+
+Transferred RTIs =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Disposal_Type] = "Transferred to Concerned Department"
+)
+
+
+// ──────────────────────────────────────────────
+// SECTION 6 — TREND & GROWTH MEASURES
+// ──────────────────────────────────────────────
+
+RTIs Previous Year =
+CALCULATE(
+    [Total RTIs],
+    FILTER(
+        ALL(rti_data[Year]),
+        rti_data[Year] = MAX(rti_data[Year]) - 1
+    )
+)
+
+// ─────────────────────────────────────────────
+
+YoY Growth % =
+DIVIDE(
+    [Total RTIs] - [RTIs Previous Year],
+    [RTIs Previous Year],
+    0
+) * 100
+
+// ─────────────────────────────────────────────
+
+YoY Growth Label =
+VAR Growth = [YoY Growth %]
+RETURN
+    IF(
+        Growth > 0,
+        "▲ " & FORMAT(Growth, "0.0") & "%",
+        "▼ " & FORMAT(ABS(Growth), "0.0") & "%"
+    )
+
+
+// ──────────────────────────────────────────────
+// SECTION 7 — PROACTIVE DISCLOSURE MEASURES
+// ──────────────────────────────────────────────
+
+Proactive Disclosure Candidates =
+CALCULATE(
+    COUNTROWS(rti_data),
+    rti_data[Proactive_Disclosure_Candidate] = "Yes"
+)
+
+// ─────────────────────────────────────────────
+
+Proactive Load Reduction % =
+DIVIDE(
+    [Proactive Disclosure Candidates],
+    [Total RTIs],
+    0
+) * 100
+
+// ─────────────────────────────────────────────
+
+Potential RTI Savings Label =
+"~" & FORMAT([Proactive Load Reduction %], "0.0") & "% reduction possible"
+
+
+// ──────────────────────────────────────────────
+// SECTION 8 — KPI STATUS MEASURES
+// (for conditional colouring on cards)
+// ──────────────────────────────────────────────
+
+Compliance Status =
+IF([Compliance Rate %] >= 85, "Good",
+   IF([Compliance Rate %] >= 70, "Warning", "Critical"))
+
+// ─────────────────────────────────────────────
+
+Avg Response Status =
+IF([Avg Response Days] <= 25, "Good",
+   IF([Avg Response Days] <= 30, "Warning", "Critical"))
+
+// ─────────────────────────────────────────────
+
+Online Filing % =
+DIVIDE(
+    CALCULATE(COUNTROWS(rti_data), rti_data[Mode_of_Filing] = "Online (RTI Online Portal)"),
+    [Total RTIs],
+    0
+) * 100
+
+// ─────────────────────────────────────────────
+
+Repeat Filer % =
+DIVIDE(
+    CALCULATE(COUNTROWS(rti_data), rti_data[Is_Repeat_Filer] = "Yes"),
+    [Total RTIs],
+    0
+) * 100

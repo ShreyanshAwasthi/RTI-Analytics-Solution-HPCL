@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.env
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Data — exclude raw/processed CSVs from git if large
+# (comment out if you want to include the dataset)
+# data/raw/*.csv
+# data/processed/*.csv
+
+# Power BI temp files
+*.pbix.lock
+
+# Logs
+*.log
